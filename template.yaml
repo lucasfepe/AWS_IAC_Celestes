@@ -1,0 +1,779 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  newprojectLambdaVSC
+
+  Sample SAM Template for newprojectLambdaVSC
+  
+
+
+
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Timeout: 30
+    MemorySize: 128
+    Environment:
+      Variables:
+        COGNITO_USER_POOL_ID: !Sub '{{resolve:ssm:/UserPoolId}}'
+        COGNITO_CLIENT_ID: !Sub '{{resolve:ssm:/UserPoolClientId}}'
+  
+Resources:
+# Add the IAM role definition
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SSMAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: 
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/UserPoolClientId'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/UserPoolId'
+  BasicLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  ReadDynamoDBPlayerSkillRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadAccessPlayerSkill
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerSkill'
+  ReadDynamoDBPlayerDecksRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadAccessPlayerDecks
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerDecks'
+  ReadDynamoDBPlayerCardsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadAccess_PlayerCards
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerCards'
+  ReadDynamoDBPlayerDeckActiveRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadAccess_PlayerDeckActive
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerDeckActive'
+  ReadDynamoDBPlayerStarbuckRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadAccess_PlayerStarbuck
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerStarbuck'
+  ScanDynamoDBDivineCardsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBScanAccess_DivineCard
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DivineCard'
+  DynamoDBDeletePlayerDeckRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadAccess_PlayerCards_Update_PlayerDecks
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerCards'
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerDecks'
+  DynamoDBMaxTutorialLevelCompleteRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadUpdateAccess_PlayerSkill
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerSkill'
+  DynamoDBTutorialDoneRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBUpdateAccess_PlayerSkill
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerSkill'
+  DynamoDBSetActiveDeckRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBUpdateAccess_PlayerDeckActive
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerDeckActive'
+  DynamoDBDeleteActiveDeckRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBDeleteAccess_PlayerDeckActive
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DeleteItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerDeckActive'
+  DynamoDBMatchEndRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadUpdateAccess_PlayerSkill
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerSkill'
+  DynamoDBBuyPackWithStardustRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadTransactAccess_PlayerCardsPlayerSkill_ScanDivineCard
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:TransactWriteItems
+                  - dynamodb:UpdateItem
+                Resource: [
+                  !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerSkill',
+                  !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerCards'
+                ]
+              - Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DivineCard'
+  DynamoDBBuyPackWithStarbuckRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadTransactAccess_PlayerCardsPlayerStarbuck_ScanDivineCard
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:TransactWriteItems
+                  - dynamodb:UpdateItem
+                Resource: [
+                  !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerStarbuck',
+                  !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerCards'
+                ]
+              - Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DivineCard'
+  DynamoDBXsollaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadUpdateAccess_PlayerStarbuck_AdminGetUserCognitoCelestesPool
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerStarbuck'
+              - Effect: Allow
+                Action: 
+                  - cognito-idp:AdminGetUser
+                Resource:
+                  - !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/us-east-1_CThpLlXz4'
+  DynamoDBHelloWorldRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBPutNewPlayerData
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: 
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerDecks'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerCards'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerSkill'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerStarbuck'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/PlayerDeckActive'
+             
+             
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: hello-world/
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref DynamoDBLayer
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBHelloWorldRole.Arn
+      Architectures:
+        - x86_64
+      Events:
+        HelloWorld:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /hello
+            Method: get
+  GetPlayerDecksFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-player-cards/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ReadDynamoDBPlayerCardsRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetPlayerDecksActualFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-player-decks/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ReadDynamoDBPlayerDecksRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  DeletePlayerDeckFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: delete-player-deck/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBDeletePlayerDeckRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+ 
+  GetPlayerActiveDeckFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-player-active-deck/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ReadDynamoDBPlayerDeckActiveRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetPlayerSkillFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-player-skill/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ReadDynamoDBPlayerSkillRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetPlayerStardustFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-player-stardust/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ReadDynamoDBPlayerSkillRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetMaxTutorialLevelCompleteFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-max-tutorial-level-complete/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ReadDynamoDBPlayerSkillRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetTutorialLevelCompleteFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-tutorial-level-complete/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBMaxTutorialLevelCompleteRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetPlayerStarbuckFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-player-starbuck/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ReadDynamoDBPlayerStarbuckRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetDivineCardsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get-divine-cards/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ScanDynamoDBDivineCardsRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetIsNewPlayerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: is-new-player/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ReadDynamoDBPlayerSkillRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  GetTutorialDoneFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: tutorial-done/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBTutorialDoneRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  SetPlayerActiveDeckFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: set-active-deck/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBSetActiveDeckRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  DeletePlayerActiveDeckFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: delete-player-active-deck/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBDeleteActiveDeckRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  
+  MatchEndFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: end-match/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBMatchEndRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  BuyPackWithStardustOGs:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: buy-pack-with-stardust-OGs/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBBuyPackWithStardustRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  BuyPackWithStardustConstellations:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: buy-pack-with-stardust-constellations/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBBuyPackWithStardustRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  BuyPackWithStarbuckOGs:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: buy-pack-with-starbuck-OGs/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBBuyPackWithStarbuckRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  BuyPackWithStarbuckConstellations:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: buy-pack-with-starbuck-constellations/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBBuyPackWithStarbuckRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Architectures:
+        - x86_64
+  AnswerChallenge:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: answer-challenge/
+      Handler: app.lambdaHandler
+      Role: !GetAtt BasicLambdaExecutionRole.Arn
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+  Xsolla:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: xsolla/
+      Handler: app.lambdaHandler
+      Role: !GetAtt DynamoDBXsollaRole.Arn
+      Layers:
+        - !Ref AuthLayer
+        - !Ref DynamoDBLayer
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+  XsollaToken:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: xsolla-token/
+      Handler: app.lambdaHandler
+      Role: !GetAtt BasicLambdaExecutionRole.Arn
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref AuthLayer
+      Architectures:
+        - x86_64
+  GetParameterFromSSM:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get-parameter-from-ssm/
+      Handler: app.lambdaHandler
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      Role: !GetAtt LambdaExecutionRole.Arn
+  AuthLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: AuthWrapperLayer
+      Description: "Handles authentication before Lambda function executes"
+      ContentUri: shared/layers/authLayer.zip
+      CompatibleRuntimes:
+        - nodejs18.x
+        - nodejs18.x
+      CompatibleArchitectures:
+        - x86_64
+  DynamoDBLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: DynamoDBClientLayer
+      Description: "Connection to DynamoDB"
+      ContentUri: shared/layers/DynamoDBDocClient.zip
+      CompatibleRuntimes:
+        - nodejs18.x
+        - nodejs18.x
+      CompatibleArchitectures:
+        - x86_64
+      
+
+
+      
+
+ 
