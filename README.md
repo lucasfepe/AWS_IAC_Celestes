@@ -16,4 +16,4 @@ This repository includes:
 
 The diagram below illustrates how **Celestes CCG** integrates various AWS services for **game hosting, authentication, backend services, and CI/CD deployment**.  
 
-![Celestes CCG Architecture](public/CloudArchitecture.png)
+![Celestes CCG Architecture](CloudArchitecture.png)
