@@ -12,3 +12,8 @@ This repository includes:
   - **AuthWrapperLayer**: Handles authentication before the Lambda function executes (`shared/layers/authLayer.zip`)
   - **DynamoDBClientLayer**: Provides a reusable DynamoDB connection (`shared/layers/DynamoDBDocClient.zip`)
 - Environment variables managed securely via AWS Systems Manager (SSM) Parameter Store
+## 🏗️ Architecture Diagram  
+
+The diagram below illustrates how **Celestes CCG** integrates various AWS services for **game hosting, authentication, backend services, and CI/CD deployment**.  
+
+![Celestes CCG Architecture](public/CloudArchitecture.png)
